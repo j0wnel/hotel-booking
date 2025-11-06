@@ -49,7 +49,7 @@ hotel-booking/
 │   └── utils/          # Utility functions
 └── public/             # Static assets
 ```
-
+ 
 ## 🚀 Getting Started
 
 ### Prerequisites
