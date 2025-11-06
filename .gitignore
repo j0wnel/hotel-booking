@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Docker
+.env
+.env.local
+.env.docker
+docker-compose.yml
+Dockerfile*
+.dockerignore
+nginx/
+DOCKER_SETUP.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

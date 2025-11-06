@@ -21,7 +21,7 @@ const RoomsPage = () => {
   React.useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const response = await fetchData('/api/controllers/rooms.php');
+        const response = await fetchData('controllers/rooms.php');
         if (response && Array.isArray(response)) {
           setRooms(response);
         }

@@ -12,15 +12,18 @@ const initialFilters = {
 
 const HomePage = () => {
   const { loading, error, fetchData } = useApi();
+  const [rooms, setRooms] = React.useState([]);
   const { filters, updateFilter, applyFilters } = useFilters(initialFilters);
-  const { searchTerm, setSearchTerm, searchResults } = useSearch([], ['name', 'description']);
+  const { searchTerm, setSearchTerm, searchResults } = useSearch(rooms, ['name', 'description']);
   const { paginatedData, currentPage, totalPages, nextPage, prevPage } = usePagination(searchResults);
 
   React.useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const data = await fetchData('/api/rooms');
-        // Handle the data
+        const data = await fetchData('controllers/rooms.php');
+        if (Array.isArray(data)) {
+          setRooms(data);
+        }
       } catch (err) {
         console.error('Error fetching rooms:', err);
       }
