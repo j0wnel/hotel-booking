@@ -9,7 +9,10 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 // Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import RoomsPage from './pages/booking/RoomsPage';
 import RoomDetailsPage from './pages/booking/RoomDetailsPage';
+import MyBookingsPage from './pages/booking/MyBookingsPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
 function App() {
@@ -23,7 +26,17 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/rooms" element={<RoomsPage />} />
               <Route path="/room/:id" element={<RoomDetailsPage />} />
+              <Route
+                path="/my-bookings"
+                element={
+                  <ProtectedRoute>
+                    <MyBookingsPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/admin"
                 element={

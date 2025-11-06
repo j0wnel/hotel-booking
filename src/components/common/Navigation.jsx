@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const Navigation = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -38,14 +38,14 @@ const Navigation = () => {
               {isAuthenticated ? (
                 <>
                   <Link
-                    to="/bookings"
+                    to="/my-bookings"
                     className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                   >
                     My Bookings
                   </Link>
                   {user?.role === 'admin' && (
                     <Link
-                      to="/admin/dashboard"
+                      to="/admin"
                       className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Dashboard
@@ -59,12 +59,20 @@ const Navigation = () => {
                   </button>
                 </>
               ) : (
-                <Link
-                  to="/login"
-                  className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Login
-                </Link>
+                <>
+                  <Link
+                    to="/login"
+                    className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="bg-primary text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    Sign Up
+                  </Link>
+                </>
               )}
             </div>
           </div>

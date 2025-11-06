@@ -30,8 +30,10 @@ const AdminDashboard = () => {
   React.useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const data = await fetchData('/api/admin/bookings');
-        setBookings(data);
+        const data = await fetchData('/api/controllers/admin.php/bookings');
+        if (data && Array.isArray(data)) {
+          setBookings(data);
+        }
       } catch (err) {
         console.error('Error fetching bookings:', err);
       }
@@ -39,8 +41,10 @@ const AdminDashboard = () => {
 
     const fetchStats = async () => {
       try {
-        const data = await fetchData('/api/admin/stats');
-        setStats(data);
+        const data = await fetchData('/api/controllers/admin.php/stats');
+        if (data) {
+          setStats(data);
+        }
       } catch (err) {
         console.error('Error fetching stats:', err);
       }
@@ -52,13 +56,18 @@ const AdminDashboard = () => {
 
   const handleStatusChange = async (bookingId, status) => {
     try {
-      await fetchData(`/api/admin/bookings/${bookingId}/status`, {
+      await fetchData(`/api/controllers/admin.php/bookings/${bookingId}/status`, {
         method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ status }),
       });
       // Refresh bookings
-      const data = await fetchData('/api/admin/bookings');
-      setBookings(data);
+      const data = await fetchData('/api/controllers/admin.php/bookings');
+      if (data && Array.isArray(data)) {
+        setBookings(data);
+      }
     } catch (err) {
       console.error('Error updating booking status:', err);
     }

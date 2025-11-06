@@ -1,17 +1,22 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import useApi from '../../hooks/useApi';
 import useBookingAvailability from '../../hooks/useBookingAvailability';
 import { calculateTotalPrice, formatDate } from '../../utils/bookingUtils';
 
 const RoomDetailsPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const { loading, error, fetchData } = useApi();
   const [room, setRoom] = React.useState(null);
   const [dates, setDates] = React.useState({
     checkIn: '',
     checkOut: '',
   });
+  const [bookingError, setBookingError] = React.useState('');
+  const [bookingSuccess, setBookingSuccess] = React.useState(false);
 
   const { isAvailable, loading: checkingAvailability } = useBookingAvailability(
     id,
@@ -22,7 +27,7 @@ const RoomDetailsPage = () => {
   React.useEffect(() => {
     const fetchRoomDetails = async () => {
       try {
-        const data = await fetchData(`/api/rooms/${id}`);
+        const data = await fetchData(`/api/controllers/rooms.php?id=${id}`);
         setRoom(data);
       } catch (err) {
         console.error('Error fetching room details:', err);
@@ -38,6 +43,74 @@ const RoomDetailsPage = () => {
       ...prev,
       [name]: value
     }));
+    setBookingError('');
+  };
+
+  const handleBooking = async () => {
+    setBookingError('');
+    setBookingSuccess(false);
+
+    // Check if user is logged in
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: `/room/${id}` } });
+      return;
+    }
+
+    // Validate dates
+    if (!dates.checkIn || !dates.checkOut) {
+      setBookingError('Please select check-in and check-out dates');
+      return;
+    }
+
+    const checkInDate = new Date(dates.checkIn);
+    const checkOutDate = new Date(dates.checkOut);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (checkInDate < today) {
+      setBookingError('Check-in date cannot be in the past');
+      return;
+    }
+
+    if (checkOutDate <= checkInDate) {
+      setBookingError('Check-out date must be after check-in date');
+      return;
+    }
+
+    if (!isAvailable) {
+      setBookingError('Room is not available for selected dates');
+      return;
+    }
+
+    try {
+      const bookingData = {
+        user_id: user.id,
+        room_id: id,
+        check_in: dates.checkIn,
+        check_out: dates.checkOut,
+        total_price: totalPrice,
+        status: 'pending'
+      };
+
+      const response = await fetchData('/api/controllers/bookings.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+      });
+
+      if (response.message === 'Booking was created.') {
+        setBookingSuccess(true);
+        setTimeout(() => {
+          navigate('/my-bookings');
+        }, 2000);
+      } else {
+        setBookingError(response.message || 'Failed to create booking');
+      }
+    } catch (err) {
+      setBookingError(err.message || 'Failed to create booking. Please try again.');
+    }
   };
 
   if (loading) {
@@ -71,7 +144,7 @@ const RoomDetailsPage = () => {
         <div className="space-y-4">
           <div className="aspect-w-16 aspect-h-9">
             <img
-              src={room.mainImage}
+              src={room.image || room.mainImage || 'https://via.placeholder.com/800x600?text=Room+Image'}
               alt={room.name}
               className="rounded-lg object-cover w-full h-full"
             />
@@ -92,13 +165,31 @@ const RoomDetailsPage = () => {
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{room.name}</h1>
-            <p className="mt-2 text-gray-600">{room.description}</p>
+            <p className="mt-2 text-gray-600">{room.description || 'Comfortable room with modern amenities'}</p>
+          </div>
+
+          <div className="border-t border-b py-4">
+            <h2 className="text-xl font-semibold mb-4">Room Details</h2>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Type:</span>
+                <span className="font-medium capitalize">{room.type}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Capacity:</span>
+                <span className="font-medium">{room.capacity} guests</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Price per night:</span>
+                <span className="text-2xl font-bold text-primary">${room.price}</span>
+              </div>
+            </div>
           </div>
 
           <div className="border-t border-b py-4">
             <h2 className="text-xl font-semibold mb-4">Amenities</h2>
             <div className="grid grid-cols-2 gap-4">
-              {room.amenities?.map((amenity, index) => (
+              {(room.amenities || ['WiFi', 'Air Conditioning', 'TV', 'Mini Bar']).map((amenity, index) => (
                 <div key={index} className="flex items-center space-x-2">
                   <svg
                     className="h-5 w-5 text-green-500"
@@ -120,6 +211,19 @@ const RoomDetailsPage = () => {
           {/* Booking Form */}
           <div className="bg-gray-50 p-6 rounded-lg">
             <h2 className="text-xl font-semibold mb-4">Book This Room</h2>
+            
+            {bookingSuccess && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-green-800">Booking successful! Redirecting to your bookings...</p>
+              </div>
+            )}
+
+            {bookingError && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-800">{bookingError}</p>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -131,6 +235,7 @@ const RoomDetailsPage = () => {
                     name="checkIn"
                     value={dates.checkIn}
                     onChange={handleDateChange}
+                    min={new Date().toISOString().split('T')[0]}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
                   />
                 </div>
@@ -143,6 +248,7 @@ const RoomDetailsPage = () => {
                     name="checkOut"
                     value={dates.checkOut}
                     onChange={handleDateChange}
+                    min={dates.checkIn || new Date().toISOString().split('T')[0]}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
                   />
                 </div>
@@ -157,20 +263,23 @@ const RoomDetailsPage = () => {
                     </span>
                   </div>
                   <div className="mt-2 text-sm text-gray-500">
-                    {isAvailable ? (
-                      <span className="text-green-500">Room is available for selected dates</span>
+                    {checkingAvailability ? (
+                      <span className="text-gray-500">Checking availability...</span>
+                    ) : isAvailable ? (
+                      <span className="text-green-500">✓ Room is available for selected dates</span>
                     ) : (
-                      <span className="text-red-500">Room is not available for selected dates</span>
+                      <span className="text-red-500">✗ Room is not available for selected dates</span>
                     )}
                   </div>
                 </div>
               )}
 
               <button
-                disabled={!isAvailable || checkingAvailability}
-                className="w-full btn-primary disabled:opacity-50"
+                onClick={handleBooking}
+                disabled={!isAvailable || checkingAvailability || bookingSuccess}
+                className="w-full bg-primary text-white py-3 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {checkingAvailability ? 'Checking availability...' : 'Book Now'}
+                {checkingAvailability ? 'Checking availability...' : bookingSuccess ? 'Booking Created!' : 'Book Now'}
               </button>
             </div>
           </div>
@@ -183,6 +292,7 @@ const RoomDetailsPage = () => {
               <p>• Check-out time: 11:00 AM</p>
               <p>• No smoking</p>
               <p>• No parties or events</p>
+              <p>• Cancellation allowed up to 24 hours before check-in</p>
             </div>
           </div>
         </div>

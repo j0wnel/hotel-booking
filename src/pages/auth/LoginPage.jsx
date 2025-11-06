@@ -1,22 +1,33 @@
 import React from 'react';
-import useForm from '@/hooks/useForm';
-import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import useForm from '../../hooks/useForm';
+import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+  const [loginError, setLoginError] = React.useState('');
+  const [successMessage, setSuccessMessage] = React.useState('');
+
+  React.useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+    }
+  }, [location]);
+
   const { values, handleChange, handleSubmit, errors, isSubmitting } = useForm(
     {
       email: '',
       password: '',
     },
     async (formData) => {
+      setLoginError('');
       try {
         await login(formData);
-        navigate('/dashboard');
+        navigate('/');
       } catch (error) {
-        console.error('Login failed:', error);
+        setLoginError(error.message || 'Login failed. Please check your credentials.');
       }
     }
   );
@@ -35,6 +46,19 @@ const LoginPage = () => {
             </a>
           </p>
         </div>
+
+        {successMessage && (
+          <div className="rounded-md bg-green-50 p-4">
+            <p className="text-sm text-green-800">{successMessage}</p>
+          </div>
+        )}
+
+        {loginError && (
+          <div className="rounded-md bg-red-50 p-4">
+            <p className="text-sm text-red-800">{loginError}</p>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
