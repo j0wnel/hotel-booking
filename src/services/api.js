@@ -1,10 +1,25 @@
 const API_BASE_URL = 'http://localhost/hotel-booking/api';
 
 const handleResponse = async (response) => {
+  const contentType = response.headers.get('content-type');
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Something went wrong');
+    // Check if the error response is HTML
+    if (contentType && contentType.includes('text/html')) {
+      throw new Error('Server error: The API endpoint might be unavailable or XAMPP might not be running.');
+    }
+    try {
+      const error = await response.json();
+      throw new Error(error.message || 'Something went wrong');
+    } catch (e) {
+      throw new Error('Failed to parse error response from server');
+    }
   }
+  
+  // Verify JSON content type for successful responses
+  if (!contentType || !contentType.includes('application/json')) {
+    throw new Error('Invalid response format: Expected JSON');
+  }
+  
   return response.json();
 };
 

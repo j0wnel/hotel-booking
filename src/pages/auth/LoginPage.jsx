@@ -16,12 +16,12 @@ const LoginPage = () => {
     }
   }, [location]);
 
-  const { values, handleChange, handleSubmit, errors, isSubmitting } = useForm(
-    {
+  const { values, handleChange, handleSubmit, errors, isSubmitting } = useForm({
+    initialValues: {
       email: '',
       password: '',
     },
-    async (formData) => {
+    onSubmit: async (formData) => {
       setLoginError('');
       try {
         await login(formData);
@@ -29,8 +29,20 @@ const LoginPage = () => {
       } catch (error) {
         setLoginError(error.message || 'Login failed. Please check your credentials.');
       }
+    },
+    validate: (values) => {
+      const errors = {};
+      if (!values.email) {
+        errors.email = 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(values.email)) {
+        errors.email = 'Invalid email address';
+      }
+      if (!values.password) {
+        errors.password = 'Password is required';
+      }
+      return errors;
     }
-  );
+  });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

@@ -1,22 +1,71 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
-const useForm = (initialValues, validate) => {
+const useForm = (config) => {
+  const {
+    initialValues = {},
+    validate,
+    onSubmit,
+    onError
+  } = config;
+
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = useCallback((e) => {
-    const { name, value } = e.target;
+    const name = e?.target?.name ?? e?.name;
+    const value = e?.target?.value ?? e?.value;
+    
+    if (!name) return; // Guard against invalid events
+
     setValues(prev => ({ ...prev, [name]: value }));
-  }, []);
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  }, [errors]);
 
   const handleBlur = useCallback((e) => {
     if (validate) {
       const { name } = e.target;
-      const fieldErrors = validate({ [name]: values[name] });
-      setErrors(prev => ({ ...prev, ...fieldErrors }));
+      const validationErrors = validate({ ...values, [name]: values[name] });
+      if (validationErrors[name]) {
+        setErrors(prev => ({ ...prev, [name]: validationErrors[name] }));
+      }
     }
   }, [validate, values]);
+
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Validate all fields
+      if (validate) {
+        const validationErrors = validate(values);
+        if (Object.keys(validationErrors).length > 0) {
+          setErrors(validationErrors);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // If validation passes, call onSubmit
+      if (onSubmit) {
+        await onSubmit(values);
+      }
+
+      // Reset form on successful submission
+      setValues(initialValues);
+      setErrors({});
+    } catch (error) {
+      if (onError) {
+        onError(error);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [values, validate, onSubmit, onError, initialValues]);
 
   const resetForm = useCallback(() => {
     setValues(initialValues);
@@ -24,20 +73,13 @@ const useForm = (initialValues, validate) => {
     setIsSubmitting(false);
   }, [initialValues]);
 
-  useEffect(() => {
-    if (isSubmitting && validate) {
-      const validationErrors = validate(values);
-      setErrors(validationErrors);
-    }
-  }, [isSubmitting, validate, values]);
-
   return {
     values,
     errors,
     isSubmitting,
-    setIsSubmitting,
     handleChange,
     handleBlur,
+    handleSubmit,
     resetForm,
     setValues,
   };

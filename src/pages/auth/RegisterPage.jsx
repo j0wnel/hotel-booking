@@ -2,51 +2,65 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useForm from '../../hooks/useForm';
 import useApi from '../../hooks/useApi';
+import { validateForm } from '../../utils/validation';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { loading, error, fetchData } = useApi();
   const [registerError, setRegisterError] = React.useState('');
 
-  const { values, handleChange, handleSubmit, errors, isSubmitting } = useForm(
+  const { values, handleChange, handleBlur, errors, isSubmitting, setIsSubmitting } = useForm(
     {
       name: '',
       email: '',
       password: '',
       confirmPassword: '',
     },
-    async (formData) => {
-      setRegisterError('');
+    validateForm
+  );
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setRegisterError('');
+    
+    try {
+      // Validate form
+      const validationErrors = validateForm(values);
+      if (Object.keys(validationErrors).length > 0) {
+        setIsSubmitting(false);
+        return;
+      }
       
       // Validate passwords match
-      if (formData.password !== formData.confirmPassword) {
+      if (values.password !== values.confirmPassword) {
         setRegisterError('Passwords do not match');
+        setIsSubmitting(false);
         return;
       }
 
-      try {
-        const result = await fetchData('/api/controllers/register.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-          }),
-        });
+      const result = await fetchData('/api/controllers/register.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+        }),
+      });
 
-        if (result.message === 'User was created.') {
-          navigate('/login', { 
-            state: { message: 'Registration successful! Please login.' } 
-          });
-        }
-      } catch (err) {
-        setRegisterError(err.message || 'Registration failed. Please try again.');
+      if (result.message === 'User was created.') {
+        navigate('/login', { 
+          state: { message: 'Registration successful! Please login.' } 
+        });
       }
+    } catch (err) {
+      setRegisterError(err.message || 'Registration failed. Please try again.');
+      setIsSubmitting(false);
     }
-  );
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

@@ -1,32 +1,27 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import useDebounce from './useDebounce';
 
-const useSearch = (items, searchKeys) => {
+const useSearch = (items = [], searchKeys = []) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState(items);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const search = useCallback((term) => {
-    if (!term.trim()) {
-      setSearchResults(items);
-      return;
-    }
+  const searchResults = useMemo(() => {
+    const term = debouncedSearchTerm.trim().toLowerCase();
+    if (!term) return items;
 
-    const results = items.filter(item =>
-      searchKeys.some(key =>
-        item[key].toString().toLowerCase().includes(term.toLowerCase())
-      )
+    return items.filter(item =>
+      searchKeys.some(key => {
+        const value = item[key];
+        return value != null && 
+               value.toString().toLowerCase().includes(term);
+      })
     );
-    setSearchResults(results);
-  }, [items, searchKeys]);
-
-  useEffect(() => {
-    search(searchTerm);
-  }, [search, searchTerm, items]);
+  }, [items, searchKeys, debouncedSearchTerm]);
 
   return {
     searchTerm,
     setSearchTerm,
-    searchResults,
-    search
+    searchResults
   };
 };
 

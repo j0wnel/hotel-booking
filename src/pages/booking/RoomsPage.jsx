@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import useApi from '../../hooks/useApi';
-import useSearch from '../../hooks/useSearch';
+import useDebounce from '../../hooks/useDebounce';
 import useFilters from '../../hooks/useFilters';
 import usePagination from '../../hooks/usePagination';
+import API_CONFIG from '../../config/api.config';
 
 const initialFilters = {
   priceRange: [0, 1000],
@@ -15,18 +16,19 @@ const RoomsPage = () => {
   const { loading, error, fetchData } = useApi();
   const [rooms, setRooms] = React.useState([]);
   const { filters, updateFilter } = useFilters(initialFilters);
-  const { searchTerm, setSearchTerm, searchResults } = useSearch(rooms, ['name', 'description', 'type']);
-  const { paginatedData, currentPage, totalPages, nextPage, prevPage } = usePagination(searchResults, 9);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   React.useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const response = await fetchData('/api/controllers/rooms.php');
+        const response = await fetchData(API_CONFIG.ENDPOINTS.ROOMS);
         if (response && Array.isArray(response)) {
           setRooms(response);
         }
       } catch (err) {
         console.error('Error fetching rooms:', err);
+        setRooms([]); // Set empty array on error
       }
     };
 
@@ -35,16 +37,22 @@ const RoomsPage = () => {
 
   // Apply filters
   const filteredRooms = React.useMemo(() => {
-    return searchResults.filter(room => {
+    return rooms.filter(room => {
+      const term = debouncedSearchTerm.toLowerCase().trim();
+      const searchMatch = !term || 
+        room.name.toLowerCase().includes(term) ||
+        room.description.toLowerCase().includes(term) ||
+        room.type.toLowerCase().includes(term);
+      
       const priceMatch = room.price >= filters.priceRange[0] && room.price <= filters.priceRange[1];
       const typeMatch = filters.roomType === 'all' || room.type === filters.roomType;
       const capacityMatch = filters.capacity === 'all' || room.capacity >= parseInt(filters.capacity);
       
-      return priceMatch && typeMatch && capacityMatch;
+      return searchMatch && priceMatch && typeMatch && capacityMatch;
     });
-  }, [searchResults, filters]);
+  }, [rooms, debouncedSearchTerm, filters]);
 
-  const { paginatedData: displayedRooms, currentPage: page, totalPages: pages, nextPage: next, prevPage: prev } = usePagination(filteredRooms, 9);
+  const { paginatedData: displayedRooms, currentPage, totalPages, nextPage, prevPage } = usePagination(filteredRooms, 9);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -62,14 +70,38 @@ const RoomsPage = () => {
 
       {/* Search and Filters */}
       <section className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <input
-            type="text"
-            placeholder="Search for rooms..."
-            className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="mb-6 relative">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search for rooms..."
+              className="w-full px-4 py-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search rooms"
+            />
+            <svg
+              className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          {loading ? (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+            </div>
+          ) : null}
+          {filteredRooms.length === 0 && searchTerm && (
+            <p className="text-gray-500 mt-2">No rooms found matching your search criteria.</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">

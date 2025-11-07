@@ -1,17 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 
-const usePagination = (data, itemsPerPage = 10) => {
+const usePagination = (data = [], itemsPerPage = 10) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [paginatedData, setPaginatedData] = useState([]);
-  const [totalPages, setTotalPages] = useState(0);
 
+  // Calculate total pages only when data length or itemsPerPage changes
+  const totalPages = useMemo(() => 
+    Math.ceil(data.length / itemsPerPage),
+    [data.length, itemsPerPage]
+  );
+
+  // Ensure current page is within bounds when data or itemsPerPage changes
   useEffect(() => {
-    if (data) {
-      setTotalPages(Math.ceil(data.length / itemsPerPage));
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      setPaginatedData(data.slice(startIndex, endIndex));
+    if (currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages));
     }
+  }, [currentPage, totalPages]);
+
+  // Calculate paginated data using useMemo to prevent unnecessary recalculations
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return data.slice(startIndex, endIndex);
   }, [data, currentPage, itemsPerPage]);
 
   const nextPage = useCallback(() => {
