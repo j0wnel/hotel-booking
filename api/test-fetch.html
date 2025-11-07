@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <button onclick="testServerStatus()">Test Server Status</button>
+    <button onclick="testRooms()">Test Rooms API</button>
+    <pre id="result"></pre>
+
+    <script>
+        const API_BASE = 'http://localhost/hotel-booking/api';
+        
+        async function testServerStatus() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing server status...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/server-status.php`);
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function testRooms() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing rooms API...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/controllers/rooms.php`);
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

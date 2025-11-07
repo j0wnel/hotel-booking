@@ -27,7 +27,7 @@ const RoomDetailsPage = () => {
   React.useEffect(() => {
     const fetchRoomDetails = async () => {
       try {
-        const data = await fetchData(`/api/controllers/rooms.php?id=${id}`);
+        const data = await fetchData(`/controllers/rooms.php?id=${id}`);
         setRoom(data);
       } catch (err) {
         console.error('Error fetching room details:', err);
@@ -35,7 +35,8 @@ const RoomDetailsPage = () => {
     };
 
     fetchRoomDetails();
-  }, [fetchData, id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]); // Only re-fetch when ID changes
 
   const handleDateChange = (e) => {
     const { name, value } = e.target;
@@ -92,7 +93,7 @@ const RoomDetailsPage = () => {
         status: 'pending'
       };
 
-      const response = await fetchData('/api/controllers/bookings.php', {
+      const response = await fetchData('/controllers/bookings.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,9 +134,11 @@ const RoomDetailsPage = () => {
     return null;
   }
 
-  const totalPrice = dates.checkIn && dates.checkOut
+  const totalPrice = (dates.checkIn && dates.checkOut && room)
     ? calculateTotalPrice(room, dates.checkIn, dates.checkOut)
     : 0;
+  
+  const formattedTotalPrice = isNaN(totalPrice) ? '0.00' : totalPrice.toFixed(2);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -144,7 +147,9 @@ const RoomDetailsPage = () => {
         <div className="space-y-4">
           <div className="aspect-w-16 aspect-h-9">
             <img
-              src={room.image || room.mainImage || 'https://via.placeholder.com/800x600?text=Room+Image'}
+              src={room.image && room.image !== 'default.jpg' 
+                ? `http://localhost/hotel-booking/api/${room.image}`
+                : 'https://via.placeholder.com/800x600?text=Room+Image'}
               alt={room.name}
               className="rounded-lg object-cover w-full h-full"
             />
@@ -181,7 +186,7 @@ const RoomDetailsPage = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Price per night:</span>
-                <span className="text-2xl font-bold text-primary">${room.price}</span>
+                <span className="text-2xl font-bold text-primary">₱{room.price}</span>
               </div>
             </div>
           </div>
@@ -259,7 +264,7 @@ const RoomDetailsPage = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Total Price:</span>
                     <span className="text-2xl font-bold text-primary">
-                      ${totalPrice}
+                      ₱{formattedTotalPrice}
                     </span>
                   </div>
                   <div className="mt-2 text-sm text-gray-500">

@@ -1,14 +1,29 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-const initialState = {
-  user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: false,
-  loading: false,
-  error: null,
+const getInitialState = () => {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  let user = null;
+  
+  try {
+    user = userStr ? JSON.parse(userStr) : null;
+  } catch (e) {
+    console.error('Error parsing user from localStorage:', e);
+    localStorage.removeItem('user');
+  }
+  
+  return {
+    user,
+    token,
+    isAuthenticated: !!(token && user),
+    loading: false,
+    error: null,
+  };
 };
+
+const initialState = getInitialState();
 
 const authReducer = (state, action) => {
   switch (action.type) {
@@ -57,7 +72,7 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: 'LOGIN_START' });
       // Call your login API here
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('http://localhost/hotel-booking/api/controllers/login.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,10 +83,12 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message);
+        throw new Error(data.message || 'Login failed');
       }
 
       localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: { user: data.user, token: data.token },
@@ -81,11 +98,13 @@ export const AuthProvider = ({ children }) => {
         type: 'LOGIN_FAIL',
         payload: error.message,
       });
+      throw error;
     }
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     dispatch({ type: 'LOGOUT' });
   }, []);
 

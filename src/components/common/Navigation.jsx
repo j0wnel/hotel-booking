@@ -37,18 +37,19 @@ const Navigation = () => {
               </Link>
               {isAuthenticated ? (
                 <>
-                  <Link
-                    to="/my-bookings"
-                    className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    My Bookings
-                  </Link>
-                  {user?.role === 'admin' && (
+                  {user?.role === 'admin' ? (
                     <Link
                       to="/admin"
                       className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                     >
-                      Dashboard
+                      Admin Dashboard
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/my-bookings"
+                      className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      My Bookings
                     </Link>
                   )}
                   <button

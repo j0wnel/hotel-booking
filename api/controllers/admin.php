@@ -1,18 +1,30 @@
 <?php
+// CORS headers - MUST be first
 header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET, PUT");
+header("Access-Control-Allow-Methods: GET, PUT, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept");
 header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+header("Content-Type: application/json; charset=UTF-8");
+
+// Handle preflight OPTIONS request BEFORE any other code
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 require_once "../config/database.php";
 require_once "../models/booking.php";
 
-$database = new Database();
-$db = $database->getConnection();
+try {
+    $database = new Database();
+    $db = $database->getConnection();
+    
+    if ($db === null) {
+        throw new Exception("Database connection failed");
+    }
 
-$method = $_SERVER['REQUEST_METHOD'];
-$request_uri = $_SERVER['REQUEST_URI'];
+    $method = $_SERVER['REQUEST_METHOD'];
+    $request_uri = $_SERVER['REQUEST_URI'];
 
 // Parse the request
 if(strpos($request_uri, '/stats') !== false) {
@@ -106,6 +118,12 @@ if(strpos($request_uri, '/stats') !== false) {
         // Update booking status
         $data = json_decode(file_get_contents("php://input"));
         
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            http_response_code(400);
+            echo json_encode(array("message" => "Invalid JSON data."));
+            return;
+        }
+        
         // Extract booking ID from URL
         preg_match('/\/bookings\/(\d+)\/status/', $request_uri, $matches);
         
@@ -141,5 +159,13 @@ if(strpos($request_uri, '/stats') !== false) {
 } else {
     http_response_code(404);
     echo json_encode(array("message" => "Endpoint not found."));
+}
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(array(
+        "error" => true,
+        "message" => "Server error: " . $e->getMessage()
+    ));
 }
 ?>

@@ -1,20 +1,33 @@
 <?php
+// CORS headers - MUST be first
 header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept");
 header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+header("Content-Type: application/json; charset=UTF-8");
+
+// Handle preflight OPTIONS request BEFORE any other code
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 require_once "../config/database.php";
 require_once "../models/booking.php";
 require_once "../models/room.php";
 
-$database = new Database();
-$db = $database->getConnection();
-$booking = new Booking($db);
-$room = new Room($db);
+try {
+    $database = new Database();
+    $db = $database->getConnection();
+    
+    if ($db === null) {
+        throw new Exception("Database connection failed");
+    }
+    
+    $booking = new Booking($db);
+    $room = new Room($db);
 
-$method = $_SERVER['REQUEST_METHOD'];
+    $method = $_SERVER['REQUEST_METHOD'];
 
 switch($method) {
     case 'GET':
@@ -69,6 +82,12 @@ switch($method) {
         // Create new booking
         $data = json_decode(file_get_contents("php://input"));
         
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            http_response_code(400);
+            echo json_encode(array("message" => "Invalid JSON data."));
+            break;
+        }
+        
         if(
             !empty($data->user_id) &&
             !empty($data->room_id) &&
@@ -76,6 +95,22 @@ switch($method) {
             !empty($data->check_out) &&
             !empty($data->total_price)
         ){
+            // Validate date formats
+            $checkIn = DateTime::createFromFormat('Y-m-d', $data->check_in);
+            $checkOut = DateTime::createFromFormat('Y-m-d', $data->check_out);
+            
+            if (!$checkIn || !$checkOut || $checkIn->format('Y-m-d') !== $data->check_in || $checkOut->format('Y-m-d') !== $data->check_out) {
+                http_response_code(400);
+                echo json_encode(array("message" => "Invalid date format. Use YYYY-MM-DD."));
+                break;
+            }
+            
+            if ($checkIn >= $checkOut) {
+                http_response_code(400);
+                echo json_encode(array("message" => "Check-out date must be after check-in date."));
+                break;
+            }
+            
             // Check room availability
             $booking->room_id = $data->room_id;
             $booking->check_in = $data->check_in;
@@ -153,5 +188,13 @@ switch($method) {
         http_response_code(405);
         echo json_encode(array("message" => "Method not allowed."));
         break;
+}
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(array(
+        "error" => true,
+        "message" => "Server error: " . $e->getMessage()
+    ));
 }
 ?>

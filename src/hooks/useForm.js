@@ -82,6 +82,8 @@ const useForm = (config) => {
     handleSubmit,
     resetForm,
     setValues,
+    setIsSubmitting,
+    setErrors,
   };
 };
 

@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/api';
+const API_BASE_URL = 'http://localhost/hotel-booking/api';
 
 const handleResponse = async (response) => {
   const contentType = response.headers.get('content-type');
@@ -28,23 +28,6 @@ export const apiEndpoints = {
   bookings: `${API_BASE_URL}/controllers/bookings.php`,
   users: `${API_BASE_URL}/controllers/users.php`,
   auth: `${API_BASE_URL}/controllers/login.php`,
-  register: `${API_BASE_URL}/controllers/register.php`,
-};
-
-// Helper to build full URL
-export const buildApiUrl = (path) => {
-  if (path.startsWith('http')) {
-    return path;
-  }
-  // Remove leading slash if present
-  let cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  
-  // If path starts with 'api/', remove it since API_BASE_URL already includes '/api'
-  if (cleanPath.startsWith('api/')) {
-    cleanPath = cleanPath.slice(4);
-  }
-  
-  return `${API_BASE_URL}/${cleanPath}`;
 };
 
 // Auth services

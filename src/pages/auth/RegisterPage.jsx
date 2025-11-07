@@ -9,58 +9,45 @@ const RegisterPage = () => {
   const { loading, error, fetchData } = useApi();
   const [registerError, setRegisterError] = React.useState('');
 
-  const { values, handleChange, handleBlur, errors, isSubmitting, setIsSubmitting } = useForm(
-    {
+  const handleRegistration = async (formValues) => {
+    // Validate passwords match
+    if (formValues.password !== formValues.confirmPassword) {
+      setRegisterError('Passwords do not match');
+      throw new Error('Passwords do not match');
+    }
+
+    const result = await fetchData('/controllers/register.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: formValues.name,
+        email: formValues.email,
+        password: formValues.password,
+      }),
+    });
+
+    if (result.message === 'User was created.') {
+      navigate('/login', { 
+        state: { message: 'Registration successful! Please login.' } 
+      });
+    }
+  };
+
+  const { values, handleChange, handleBlur, errors, isSubmitting, handleSubmit } = useForm({
+    initialValues: {
       name: '',
       email: '',
       password: '',
       confirmPassword: '',
     },
-    validateForm
-  );
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setRegisterError('');
-    
-    try {
-      // Validate form
-      const validationErrors = validateForm(values);
-      if (Object.keys(validationErrors).length > 0) {
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Validate passwords match
-      if (values.password !== values.confirmPassword) {
-        setRegisterError('Passwords do not match');
-        setIsSubmitting(false);
-        return;
-      }
-
-      const result = await fetchData('/api/controllers/register.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: values.name,
-          email: values.email,
-          password: values.password,
-        }),
-      });
-
-      if (result.message === 'User was created.') {
-        navigate('/login', { 
-          state: { message: 'Registration successful! Please login.' } 
-        });
-      }
-    } catch (err) {
+    validate: validateForm,
+    onSubmit: handleRegistration,
+    onError: (err) => {
       setRegisterError(err.message || 'Registration failed. Please try again.');
-      setIsSubmitting(false);
     }
-  };
+  });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -95,8 +82,9 @@ const RegisterPage = () => {
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                 placeholder="John Doe"
-                value={values.name}
+                value={values.name || ''}
                 onChange={handleChange}
+                onBlur={handleBlur}
               />
               {errors.name && (
                 <p className="text-red-500 text-xs mt-1">{errors.name}</p>
@@ -115,8 +103,9 @@ const RegisterPage = () => {
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                 placeholder="john@example.com"
-                value={values.email}
+                value={values.email || ''}
                 onChange={handleChange}
+                onBlur={handleBlur}
               />
               {errors.email && (
                 <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -135,8 +124,9 @@ const RegisterPage = () => {
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                 placeholder="Enter password"
-                value={values.password}
+                value={values.password || ''}
                 onChange={handleChange}
+                onBlur={handleBlur}
               />
               {errors.password && (
                 <p className="text-red-500 text-xs mt-1">{errors.password}</p>
@@ -155,8 +145,9 @@ const RegisterPage = () => {
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
                 placeholder="Confirm password"
-                value={values.confirmPassword}
+                value={values.confirmPassword || ''}
                 onChange={handleChange}
+                onBlur={handleBlur}
               />
               {errors.confirmPassword && (
                 <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>

@@ -1,17 +1,33 @@
 import { useState, useCallback, useEffect } from 'react';
 import API_CONFIG from '../config/api.config';
 
-const SERVER_STATUS_URL = 'http://localhost/hotel-booking/api/server-status.php';
-
 const checkServerStatus = async () => {
   try {
-    const response = await fetch(SERVER_STATUS_URL);
+    const url = API_CONFIG.getFullUrl(API_CONFIG.ENDPOINTS.SERVER_STATUS);
+    console.log('Checking server status at:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+      mode: 'cors',
+      cache: 'no-cache'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
+    
     const data = await response.json();
+    console.log('Server status:', data);
+    
     return {
-      isAccessible: true,
+      isAccessible: data.status === 'active',
       details: data
     };
   } catch (error) {
+    console.error('Server status check failed:', error);
     return {
       isAccessible: false,
       error: error.message
@@ -39,17 +55,16 @@ const useApi = () => {
           details: status.details
         });
         
+        // Don't set error state here - only log to console
         if (!status.isAccessible) {
-          setError(`Server is not accessible. Please check:
-            1. Open XAMPP Control Panel
-            2. Start Apache (should be green)
-            3. Start MySQL (should be green)
-            4. Check if another program is using port 80 or 443
-            
-            Technical details: ${status.error || 'Connection failed'}`);
+          console.warn('Server not accessible:', status.error);
+        } else {
+          console.log('Server is accessible');
+          // Clear any previous errors if server becomes accessible
+          setError(null);
         }
       } catch (err) {
-        setError('Failed to check server status: ' + err.message);
+        console.error('Failed to check server status:', err.message);
       }
     };
     
@@ -65,50 +80,29 @@ const useApi = () => {
       setLoading(true);
       setError(null);
       
-      // Check server status first
-      if (!serverStatus.accessible && serverStatus.checked) {
-        const status = await checkServerStatus();
-        if (!status.isAccessible) {
-          throw new Error(`Server Connection Error:
-            
-            Please follow these steps:
-            1. Open XAMPP Control Panel
-            2. If Apache or MySQL is running (red), click Stop
-            3. Wait 5 seconds
-            4. Click Start for both Apache and MySQL
-            5. Wait for both to turn green
-            
-            If the problem persists:
-            - Check if another program is using ports 80/443
-            - Try changing Apache port to 8080 in httpd.conf
-            - Check XAMPP logs for errors
-            
-            Technical details: ${status.error || 'Connection failed'}`);
-        }
-        // Update status if server is now accessible
-        setServerStatus({
-          checked: true,
-          accessible: status.isAccessible,
-          details: status.details
-        });
-      }
-
       const url = API_CONFIG.getFullUrl(endpoint);
       console.log('Fetching from:', url);
       
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...options.headers,
+      };
+      
+      // Add Authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(url, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          ...options.headers,
-        },
+        headers,
         credentials: 'same-origin',
         mode: 'cors',
       });
-
-      console.log('Response status:', response.status, response.statusText);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -128,7 +122,6 @@ const useApi = () => {
       }
 
       const data = await response.json();
-      console.log('Data received:', data);
       return data;
     } catch (err) {
       console.error('API Error:', err);

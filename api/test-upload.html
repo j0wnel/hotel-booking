@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Image Upload</title>
+</head>
+<body>
+    <h1>Test Image Upload</h1>
+    <form id="uploadForm">
+        <input type="file" id="imageFile" accept="image/*" required>
+        <button type="submit">Upload</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Get token from localStorage (you need to login first)
+            const token = localStorage.getItem('token');
+
+            try {
+                const response = await fetch('http://localhost/hotel-booking/api/controllers/upload.php', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                document.getElementById('result').innerHTML = `
+                    <h3>Result:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    ${data.url ? `<img src="${data.url}" style="max-width: 300px;">` : ''}
+                `;
+            } catch (err) {
+                document.getElementById('result').innerHTML = `<p style="color: red;">Error: ${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

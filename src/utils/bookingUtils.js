@@ -10,7 +10,8 @@ export const calculateTotalPrice = (room, checkIn, checkOut) => {
   const start = new Date(checkIn);
   const end = new Date(checkOut);
   const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-  return room.pricePerNight * nights;
+  const pricePerNight = parseFloat(room.price || room.pricePerNight || 0);
+  return pricePerNight * nights;
 };
 
 export const validateBookingDates = (checkIn, checkOut, existingBookings) => {

@@ -33,7 +33,7 @@ const RoomsPage = () => {
     };
 
     fetchRooms();
-  }, []);
+  }, []); // Empty dependency array - only fetch once on mount
 
   // Apply filters
   const filteredRooms = React.useMemo(() => {
@@ -121,9 +121,9 @@ const RoomsPage = () => {
                   onChange={(e) => updateFilter('priceRange', [0, parseInt(e.target.value)])}
                   className="w-full"
                 />
-                <div className="flex justify-between text-sm text-gray-600 mt-1">
-                  <span>$0</span>
-                  <span>${filters.priceRange[1]}</span>
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>₱0</span>
+                  <span>₱{filters.priceRange[1]}</span>
                 </div>
               </div>
 
@@ -194,10 +194,10 @@ const RoomsPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {displayedRooms.map((room) => (
                     <div key={room.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                      <div className="relative h-48 bg-gray-200">
-                        {room.image ? (
+                      <div className="relative h-48 bg-gray-200 rounded-t-lg overflow-hidden">
+                        {room.image && room.image !== 'default.jpg' ? (
                           <img
-                            src={room.image}
+                            src={`http://localhost/hotel-booking/api/${room.image}`}
                             alt={room.name}
                             className="w-full h-full object-cover"
                           />
@@ -245,7 +245,7 @@ const RoomsPage = () => {
                             <span>{room.capacity} guests</span>
                           </div>
                           <span className="text-primary font-bold text-xl">
-                            ${room.price}
+                            ₱{room.price}
                             <span className="text-sm text-gray-500">/night</span>
                           </span>
                         </div>
@@ -261,21 +261,21 @@ const RoomsPage = () => {
                 </div>
 
                 {/* Pagination */}
-                {pages > 1 && (
+                {totalPages > 1 && (
                   <div className="mt-8 flex justify-center gap-2">
                     <button
-                      onClick={prev}
-                      disabled={page === 1}
+                      onClick={prevPage}
+                      disabled={currentPage === 1}
                       className="px-4 py-2 border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Previous
                     </button>
                     <span className="px-4 py-2 flex items-center">
-                      Page {page} of {pages}
+                      Page {currentPage} of {totalPages}
                     </span>
                     <button
-                      onClick={next}
-                      disabled={page === pages}
+                      onClick={nextPage}
+                      disabled={currentPage === totalPages}
                       className="px-4 py-2 border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Next

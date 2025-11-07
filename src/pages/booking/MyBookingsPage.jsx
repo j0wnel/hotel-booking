@@ -20,7 +20,7 @@ const MyBookingsPage = () => {
       if (!user) return;
 
       try {
-        const response = await fetchData(`/api/controllers/bookings.php?user_id=${user.id}`);
+        const response = await fetchData(`/controllers/bookings.php?user_id=${user.id}`);
         if (response && Array.isArray(response)) {
           setBookings(response);
         }
@@ -30,7 +30,8 @@ const MyBookingsPage = () => {
     };
 
     fetchMyBookings();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Only re-fetch when user ID changes
 
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) {
@@ -38,7 +39,7 @@ const MyBookingsPage = () => {
     }
 
     try {
-      await fetchData(`/api/controllers/bookings.php?id=${bookingId}`, {
+      await fetchData(`/controllers/bookings.php?id=${bookingId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -47,7 +48,7 @@ const MyBookingsPage = () => {
       });
 
       // Refresh bookings
-      const response = await fetchData(`/api/controllers/bookings.php?user_id=${user.id}`);
+      const response = await fetchData(`/controllers/bookings.php?user_id=${user.id}`);
       if (response && Array.isArray(response)) {
         setBookings(response);
       }
@@ -237,7 +238,7 @@ const MyBookingsPage = () => {
                         <div>
                           <p className="text-sm text-gray-500">Total Price</p>
                           <p className="text-2xl font-bold text-primary">
-                            ${booking.total_price}
+                            ₱{booking.total_price}
                           </p>
                         </div>
                         <div className="flex gap-2">

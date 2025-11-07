@@ -1,11 +1,19 @@
 <?php
+// CORS headers
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Content-Type: application/json');
+
+// Handle preflight
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 // Disable error reporting for response
 error_reporting(0);
 ini_set('display_errors', 0);
-
-// Set JSON header
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
 
 // Test database connection
 function testDatabase() {

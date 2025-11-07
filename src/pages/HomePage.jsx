@@ -3,6 +3,7 @@ import useSearch from '../hooks/useSearch';
 import useFilters from '../hooks/useFilters';
 import usePagination from '../hooks/usePagination';
 import useApi from '../hooks/useApi';
+import API_CONFIG from '../config/api.config';
 
 const initialFilters = {
   priceRange: [0, 1000],
@@ -20,17 +21,18 @@ const HomePage = () => {
   React.useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const data = await fetchData('controllers/rooms.php');
+        const data = await fetchData(API_CONFIG.ENDPOINTS.ROOMS);
         if (Array.isArray(data)) {
           setRooms(data);
         }
       } catch (err) {
         console.error('Error fetching rooms:', err);
+        setRooms([]); // Set empty array on error
       }
     };
 
     fetchRooms();
-  }, [fetchData]);
+  }, []); // Remove fetchData from dependency to prevent re-fetching
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -82,9 +84,9 @@ const HomePage = () => {
                   onChange={(e) => updateFilter('priceRange', [0, parseInt(e.target.value)])}
                   className="w-full"
                 />
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>$0</span>
-                  <span>${filters.priceRange[1]}</span>
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>₱0</span>
+                  <span>₱{filters.priceRange[1]}</span>
                 </div>
               </div>
 
@@ -127,15 +129,24 @@ const HomePage = () => {
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
-            ) : error ? (
-              <div className="text-red-500 text-center">{error}</div>
+            ) : error && rooms.length === 0 ? (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Unable to load rooms</h3>
+                <p className="text-sm">{error}</p>
+              </div>
+            ) : paginatedData.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-gray-500 text-lg">No rooms available at the moment.</p>
+              </div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {paginatedData.map((room) => (
                     <div key={room.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                       <img
-                        src={room.image}
+                        src={room.image && room.image !== 'default.jpg' 
+                          ? `http://localhost/hotel-booking/api/${room.image}` 
+                          : 'https://via.placeholder.com/400x300?text=No+Image'}
                         alt={room.name}
                         className="w-full h-48 object-cover"
                       />
@@ -143,7 +154,7 @@ const HomePage = () => {
                         <h3 className="text-lg font-semibold mb-2">{room.name}</h3>
                         <p className="text-gray-600 mb-4">{room.description}</p>
                         <div className="flex justify-between items-center">
-                          <span className="text-primary font-bold">${room.price}/night</span>
+                          <span className="text-primary font-bold">₱{room.price}/night</span>
                           <button className="btn-primary">Book Now</button>
                         </div>
                       </div>
