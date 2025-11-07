@@ -108,6 +108,8 @@ const useApi = () => {
         mode: 'cors',
       });
 
+      console.log('Response status:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
         let errorMessage;
@@ -126,6 +128,7 @@ const useApi = () => {
       }
 
       const data = await response.json();
+      console.log('Data received:', data);
       return data;
     } catch (err) {
       console.error('API Error:', err);
