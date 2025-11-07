@@ -4,6 +4,7 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept");
 header("Access-Control-Max-Age: 3600");
+header("Content-Type: application/json; charset=UTF-8");
 
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
@@ -14,16 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 require_once "../middleware/auth.php";
 
 // Require admin authentication
-Auth::requireAdmin();
-
-// Set JSON response header
-header("Content-Type: application/json; charset=UTF-8");
+try {
+    $userData = Auth::requireAdmin();
+} catch (Exception $e) {
+    http_response_code(401);
+    echo json_encode(array(
+        "message" => "Authentication failed",
+        "error" => $e->getMessage()
+    ));
+    exit();
+}
 
 try {
     // Check if file was uploaded
     if (!isset($_FILES['image'])) {
         http_response_code(400);
-        echo json_encode(array("message" => "No file uploaded."));
+        echo json_encode(array("message" => "No file uploaded. Please select an image."));
         exit();
     }
 

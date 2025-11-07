@@ -68,7 +68,8 @@ const AdminRoomsPage = () => {
       fetchRooms();
     } catch (err) {
       console.error('Error saving room:', err);
-      alert('Failed to save room. Please try again.');
+      const errorMessage = err.response?.message || err.message || 'Failed to save room. Please try again.';
+      alert(errorMessage);
     }
   };
 
@@ -154,11 +155,11 @@ const AdminRoomsPage = () => {
         body: formDataUpload
       });
 
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Upload failed');
+      }
       
       // Update form data with the uploaded image path
       setFormData(prev => ({
@@ -171,7 +172,7 @@ const AdminRoomsPage = () => {
       
     } catch (err) {
       console.error('Error uploading image:', err);
-      alert('Failed to upload image. Please try again.');
+      alert(err.message || 'Failed to upload image. Please try again.');
     } finally {
       setUploadingImage(false);
     }

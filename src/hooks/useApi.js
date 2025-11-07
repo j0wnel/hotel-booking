@@ -113,6 +113,15 @@ const useApi = () => {
         } catch (e) {
           errorMessage = errorText || `HTTP error! status: ${response.status}`;
         }
+        
+        // Handle 401 Unauthorized - redirect to login
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+          throw new Error('Session expired. Please login again.');
+        }
+        
         throw new Error(errorMessage);
       }
 

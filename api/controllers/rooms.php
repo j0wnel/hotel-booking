@@ -94,7 +94,23 @@ try {
             break;
         }
         
-        if($room->create($data)) {
+        // Validate required fields
+        if(empty($data->name) || empty($data->price) || empty($data->type) || empty($data->capacity)) {
+            http_response_code(400);
+            echo json_encode(array("message" => "Missing required fields."));
+            break;
+        }
+        
+        // Set room properties
+        $room->name = $data->name;
+        $room->description = $data->description ?? '';
+        $room->price = $data->price;
+        $room->type = $data->type;
+        $room->capacity = $data->capacity;
+        $room->image = $data->image ?? 'default.jpg';
+        $room->status = $data->status ?? 'available';
+        
+        if($room->create()) {
             http_response_code(201);
             echo json_encode(array(
                 "message" => "Room was created.",
